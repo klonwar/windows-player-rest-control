@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/klonwar/windows-player-rest-control/compare/v0.4.1...v0.4.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* restore runtime assets before publish ([9d3539e](https://github.com/klonwar/windows-player-rest-control/commit/9d3539eeaf858cf0844afc8c5cd536a4572885b2))
+
 ## [0.4.1](https://github.com/klonwar/windows-player-rest-control/compare/v0.4.0...v0.4.1) (2026-09-16)
 
 
