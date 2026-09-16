@@ -109,6 +109,15 @@ class WindowsPlayerControlMediaPlayer(CoordinatorEntity, MediaPlayerEntity):
         return self._state.album if self._state else None
 
     @property
+    def media_image_url(self) -> str | None:
+        """Expose the current Windows Media Session thumbnail to Home Assistant."""
+        if not self.available or self._state is None:
+            return None
+        # Change the URL only when track metadata changes, avoiding a download on
+        # every polling cycle while still invalidating the HA/frontend cache.
+        return self._client.artwork_url_for(self._state)
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         if self._state is None:
             return {}

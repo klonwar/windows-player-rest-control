@@ -105,7 +105,15 @@ public sealed class WindowsMediaController : IMediaController, IMediaArtwork
 
     public async Task<MediaArtwork?> GetArtworkAsync(CancellationToken cancellationToken = default)
     {
-        var session = await GetCurrentSessionAsync(cancellationToken);
+        GlobalSystemMediaTransportControlsSession? session;
+        try
+        {
+            session = await GetCurrentSessionAsync(cancellationToken);
+        }
+        catch (COMException)
+        {
+            return null;
+        }
         if (session is null)
         {
             return null;
