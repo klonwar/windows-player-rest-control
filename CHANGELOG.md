@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/klonwar/windows-player-rest-control/compare/v0.3.0...v0.3.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* integration error ([0b351da](https://github.com/klonwar/windows-player-rest-control/commit/0b351da108ae2f5fbab07776ee8c94b081587171))
+* manifest ([5097e71](https://github.com/klonwar/windows-player-rest-control/commit/5097e7129611506a8208760da21421d76fd0ec6c))
+
 ## [0.3.0](https://github.com/klonwar/windows-player-rest-control/compare/v0.2.0...v0.3.0) (2026-09-16)
 
 
