@@ -1,16 +1,143 @@
-# windows-player-rest-control
-Small Windows app giving REST API for controlling media player. With Home Assistant integration
+# Windows Player Control
 
-## CI/CD
+Control the active Windows media session from Home Assistant. Windows Player Control is a small tray application that exposes a local REST API and a HACS-compatible Home Assistant integration.
 
-GitHub Actions runs the Windows build and tests on pull requests and pushes to `main`. HACS and Hassfest validation activate automatically when a Home Assistant integration manifest is added under `custom_components/`.
+It works with any application that publishes a Windows media session, including browsers, music players, and video players. It does not scrape browser pages or depend on a specific player.
 
-Stable releases use release-please. A push to `main` creates or updates a release PR; after the release PR is reviewed and squash-merged, release-please creates the version tag and GitHub Release. The release workflow then builds the self-contained Windows executable and uploads it with a SHA-256 checksum.
+## Features
 
-Beta releases are started manually from the **Beta** workflow by selecting a branch or commit. They create a prerelease without changing `main`.
+- Play, pause, and toggle play/pause.
+- Next and previous track.
+- Set, increase, and decrease system volume.
+- Mute and unmute.
+- Track title, artist, album, and application metadata when Windows provides it.
+- Windows tray icon with a settings window.
+- Optional **Start with Windows** startup.
+- Standalone self-contained `.exe`; no installer or service required.
+- Home Assistant `media_player` entity through HACS.
 
-The repository administrator must configure a `RELEASE_PLEASE_TOKEN` Actions secret. It should be a GitHub token that can create and update release PRs and lets their pull-request checks run normally. The workflow uses the default `GITHUB_TOKEN` only for uploading release assets.
+## Requirements
+
+- Windows 10/11, 64-bit.
+- A Windows user session with an active media session.
+- Home Assistant on the same trusted LAN (or a private VPN).
+
+The API is designed for a trusted network. Do not expose it directly to the Internet.
+
+## Windows application
+
+### Download
+
+Open the [latest GitHub release](https://github.com/klonwar/windows-player-rest-control/releases/latest) and download the `windows-player-control-*-win-x64.exe` asset. The executable is self-contained and can be started directly.
+
+The matching `.sha256` file contains the SHA-256 checksum for verifying the download.
+
+### Configure
+
+1. Start the executable. It runs in the Windows notification area.
+2. Open **Settings** from the tray menu.
+3. Choose the bind address and port. The default port is `5002`.
+4. Copy the visible **Secret** value; Home Assistant needs the same value.
+5. Optionally enable **Start with Windows**.
+6. Save the settings and keep the application running.
+
+The secret is stored locally using Windows protected storage. It is intentionally visible and copyable in the settings window, but it must not be shared publicly.
 
 ## Home Assistant integration
 
-The `custom_components/windows_player_control` directory is a HACS-compatible custom integration. Add this repository as a custom HACS repository with category **Integration**, then install **Windows Player Control** and configure the Windows app host, port (default `5002`), and API secret. The integration exposes one media-player entity with playback, volume, mute, and track metadata controls.
+### HACS installation
+
+1. In HACS, open **Integrations**.
+2. Add `klonwar/windows-player-rest-control` as a custom repository with category **Integration**.
+3. Install **Windows Player Control**.
+4. Restart Home Assistant.
+5. Add **Windows Player Control** from **Settings → Devices & services → Add integration**.
+6. Enter the Windows host/IP, port (`5002` by default), and the secret copied from the app.
+
+The integration creates one `media_player` entity per configured Windows endpoint. It polls the endpoint every 10 seconds and reports unavailable or unknown states without inventing playback information.
+
+### Manual installation
+
+Copy the `custom_components/windows_player_control` directory into the `config/custom_components/` directory of Home Assistant, then restart Home Assistant and add the integration from the UI.
+
+## REST API
+
+All requests use the configured secret as a URL path segment:
+
+```text
+http://<windows-host>:5002/api/v1/<secret>
+```
+
+Read the current state:
+
+```http
+GET /api/v1/<secret>/state
+```
+
+Media commands use `POST`:
+
+```http
+POST /api/v1/<secret>/media/play
+POST /api/v1/<secret>/media/pause
+POST /api/v1/<secret>/media/toggle
+POST /api/v1/<secret>/media/next
+POST /api/v1/<secret>/media/previous
+POST /api/v1/<secret>/volume/up
+POST /api/v1/<secret>/volume/down
+POST /api/v1/<secret>/volume/mute
+POST /api/v1/<secret>/volume/unmute
+```
+
+Absolute volume uses `PUT` with a value from `0` to `1`:
+
+```http
+PUT /api/v1/<secret>/volume
+Content-Type: application/json
+
+{"value": 0.5}
+```
+
+Successful commands return `204 No Content`. Authentication failures return `401`; invalid volume values return `400`; unavailable or unknown media state returns `409`.
+
+Because the secret is in the URL, avoid access logs, reverse-proxy logs, screenshots, and diagnostics that could capture complete request paths.
+
+## Development
+
+The Windows application is a .NET 8 WinForms tray app with an embedded ASP.NET Core Minimal API.
+
+Build and test the Windows solution:
+
+```bash
+dotnet restore WindowsPlayerControl.sln
+dotnet build WindowsPlayerControl.sln --configuration Release
+dotnet test WindowsPlayerControl.sln --configuration Release
+```
+
+Run the Python integration checks from the repository root:
+
+```bash
+python -m pip install pytest ruff aiohttp
+python -m compileall -q custom_components
+python -m pytest tests
+ruff check .
+```
+
+The detailed protocol and architecture decisions are documented in [docs/windows-media-control-design.md](docs/windows-media-control-design.md).
+
+## Releases and CI
+
+GitHub Actions runs the Windows build and tests on pull requests and pushes to `main`. HACS and Hassfest validate the integration on normal pull requests and `main` pushes.
+
+Stable releases use [Release Please](https://github.com/googleapis/release-please). A change merged to `main` creates or updates a release PR. After that PR is reviewed and squash-merged, the workflow creates the version tag and GitHub release; the release workflow then uploads the self-contained Windows executable and checksum.
+
+Beta releases can be created manually from the **[Release] Beta** workflow by selecting a branch or commit. They are prereleases and do not modify `main`.
+
+Stable release automation requires a repository Actions secret named `RELEASE_PLEASE_TOKEN` with permission to create and update release PRs.
+
+## Scope and limitations
+
+The project targets one or more Windows PCs on a trusted LAN. Internet access, power control, MQTT, browser automation, player selection UI, installers, services, and automatic updates are outside the current scope.
+
+## License
+
+Released under the [MIT License](LICENSE).
