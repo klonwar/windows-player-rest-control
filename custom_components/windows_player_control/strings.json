@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Windows Player Control",
+        "description": "Enter the host, port, and secret shown in the Windows app settings.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "secret": "Secret"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the Windows application.",
+      "invalid_auth": "The secret was rejected.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This Windows endpoint is already configured."
+    }
+  }
+}

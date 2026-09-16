@@ -10,3 +10,7 @@ Stable releases use release-please. A push to `main` creates or updates a releas
 Beta releases are started manually from the **Beta** workflow by selecting a branch or commit. They create a prerelease without changing `main`.
 
 The repository administrator must configure a `RELEASE_PLEASE_TOKEN` Actions secret. It should be a GitHub token that can create and update release PRs and lets their pull-request checks run normally. The workflow uses the default `GITHUB_TOKEN` only for uploading release assets.
+
+## Home Assistant integration
+
+The `custom_components/windows_player_control` directory is a HACS-compatible custom integration. Add this repository as a custom HACS repository with category **Integration**, then install **Windows Player Control** and configure the Windows app host, port (default `5002`), and API secret. The integration exposes one media-player entity with playback, volume, mute, and track metadata controls.

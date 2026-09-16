@@ -1,0 +1,11 @@
+{
+  "domain": "windows_player_control",
+  "name": "Windows Player Control",
+  "version": "0.2.0",
+  "config_flow": true,
+  "documentation": "https://github.com/klonwar/windows-player-rest-control",
+  "issue_tracker": "https://github.com/klonwar/windows-player-rest-control/issues",
+  "codeowners": [],
+  "integration_type": "hub",
+  "iot_class": "local_polling"
+}

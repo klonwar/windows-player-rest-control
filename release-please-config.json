@@ -5,7 +5,14 @@
   "packages": {
     ".": {
       "release-type": "simple",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "custom_components/windows_player_control/manifest.json",
+          "jsonpath": "$.version"
+        }
+      ]
     }
   }
 }
