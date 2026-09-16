@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/klonwar/windows-player-rest-control/compare/v0.3.2...v0.4.0) (2026-09-16)
+
+
+### Features
+
+* check for updates ([c7b1cd6](https://github.com/klonwar/windows-player-rest-control/commit/c7b1cd6523fddae81bd4ed60d4cdfcf79b6fabd4))
+
+
+### Bug Fixes
+
+* one running instance check ([1ca7178](https://github.com/klonwar/windows-player-rest-control/commit/1ca717871a5632fb757bc6a5f5a5c5ad032cb966))
+
 ## [0.3.2](https://github.com/klonwar/windows-player-rest-control/compare/v0.3.1...v0.3.2) (2026-09-16)
 
 
