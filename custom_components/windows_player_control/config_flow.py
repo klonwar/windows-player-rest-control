@@ -57,14 +57,20 @@ class WindowsPlayerControlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_HOST, default=DEFAULT_HOST): str,
-                    vol.Required(CONF_PORT, default=DEFAULT_PORT): vol.All(
-                        vol.Coerce(int), vol.Range(min=1, max=65535)
-                    ),
-                    vol.Required(CONF_SECRET): str,
-                }
-            ),
+            data_schema=self._schema(user_input),
             errors=errors,
+        )
+
+    @staticmethod
+    def _schema(user_input=None) -> vol.Schema:
+        """Build the form schema while preserving values after validation errors."""
+        values = user_input or {}
+        return vol.Schema(
+            {
+                vol.Required(CONF_HOST, default=values.get(CONF_HOST, DEFAULT_HOST)): str,
+                vol.Required(
+                    CONF_PORT, default=values.get(CONF_PORT, DEFAULT_PORT)
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=65535)),
+                vol.Required(CONF_SECRET, default=values.get(CONF_SECRET, "")): str,
+            }
         )
