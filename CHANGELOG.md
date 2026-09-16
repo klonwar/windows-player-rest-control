@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/klonwar/windows-player-rest-control/compare/v0.4.2...v0.5.0) (2026-09-16)
+
+
+### Features
+
+* thumbnail in ha ([#8](https://github.com/klonwar/windows-player-rest-control/issues/8)) ([c8d7f89](https://github.com/klonwar/windows-player-rest-control/commit/c8d7f8968668874d18f77f74a9e578e62e7d66b1))
+
 ## [0.4.2](https://github.com/klonwar/windows-player-rest-control/compare/v0.4.1...v0.4.2) (2026-09-16)
 
 
