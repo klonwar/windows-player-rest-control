@@ -8,6 +8,7 @@ internal sealed class SettingsForm : Form
     private readonly NumericUpDown port = new();
     private readonly TextBox secret = new();
     private readonly CheckBox startWithWindows = new();
+    private readonly CheckBox checkForUpdates = new();
     private readonly Action<AppSettings> saveSettings;
 
     public SettingsForm(AppSettings settings, Action<AppSettings> saveSettings)
@@ -18,7 +19,7 @@ internal sealed class SettingsForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(430, 220);
+        ClientSize = new Size(430, 250);
 
         bindAddress.Text = settings.BindAddress;
         port.Minimum = 1024;
@@ -29,13 +30,16 @@ internal sealed class SettingsForm : Form
         startWithWindows.Text = "Start with Windows";
         startWithWindows.AutoSize = true;
         startWithWindows.Checked = settings.StartWithWindows;
+        checkForUpdates.Text = "Check for updates";
+        checkForUpdates.AutoSize = true;
+        checkForUpdates.Checked = settings.CheckForUpdates;
 
         var table = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(12),
             ColumnCount = 2,
-            RowCount = 5,
+            RowCount = 6,
         };
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -43,6 +47,7 @@ internal sealed class SettingsForm : Form
         AddRow(table, 1, "Port", port);
         AddRow(table, 2, "Secret", secret);
         table.Controls.Add(startWithWindows, 1, 3);
+        table.Controls.Add(checkForUpdates, 1, 4);
 
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
         var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, AutoSize = true };
@@ -50,7 +55,7 @@ internal sealed class SettingsForm : Form
         save.Click += SaveClicked;
         buttons.Controls.Add(cancel);
         buttons.Controls.Add(save);
-        table.Controls.Add(buttons, 0, 4);
+        table.Controls.Add(buttons, 0, 5);
         table.SetColumnSpan(buttons, 2);
 
         Controls.Add(table);
@@ -93,7 +98,12 @@ internal sealed class SettingsForm : Form
             return false;
         }
 
-        updated = new AppSettings(bindAddress.Text.Trim(), (int)port.Value, secret.Text, startWithWindows.Checked);
+        updated = new AppSettings(
+            bindAddress.Text.Trim(),
+            (int)port.Value,
+            secret.Text,
+            startWithWindows.Checked,
+            checkForUpdates.Checked);
         return true;
     }
 }

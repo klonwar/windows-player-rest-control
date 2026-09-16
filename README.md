@@ -39,7 +39,8 @@ The matching `.sha256` file contains the SHA-256 checksum for verifying the down
 3. Choose the bind address and port. The default port is `5002`.
 4. Copy the visible **Secret** value; Home Assistant needs the same value.
 5. Optionally enable **Start with Windows**.
-6. Save the settings and keep the application running.
+6. Optionally enable **Check for updates**. The app only checks GitHub Releases and asks before opening the release page; it never updates itself.
+7. Save the settings and keep the application running.
 
 The secret is stored locally using Windows protected storage. It is intentionally visible and copyable in the settings window, but it must not be shared publicly.
 
@@ -136,7 +137,7 @@ Stable release automation requires a repository Actions secret named `RELEASE_PL
 
 ## Scope and limitations
 
-The project targets one or more Windows PCs on a trusted LAN. Internet access, power control, MQTT, browser automation, player selection UI, installers, services, and automatic updates are outside the current scope.
+The project targets one or more Windows PCs on a trusted LAN. Internet access is not required for normal operation; the optional update check makes one HTTPS request to GitHub Releases and never downloads or installs anything. Power control, MQTT, browser automation, player selection UI, installers, services, and automatic updates are outside the current scope.
 
 ## License
 

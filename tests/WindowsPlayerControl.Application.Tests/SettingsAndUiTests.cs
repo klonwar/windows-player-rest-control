@@ -132,7 +132,7 @@ public sealed class SettingsAndUiTests
                     .Single()
                     .Controls
                     .OfType<CheckBox>()
-                    .Single()
+                    .Single(box => box.Text == "Start with Windows")
                     .Text);
             }
             catch (Exception exception)

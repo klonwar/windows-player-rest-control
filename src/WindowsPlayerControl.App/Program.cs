@@ -1,5 +1,8 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Diagnostics;
+using System.ComponentModel;
+using System.Text.Json;
 using WindowsPlayerControl.Api;
 using WindowsPlayerControl.Application;
 using WindowsPlayerControl.Infrastructure.Windows;
@@ -46,6 +49,11 @@ internal sealed class TrayApplicationContext : ApplicationContext
     private readonly NotifyIcon trayIcon;
     private readonly SettingsStore settingsStore = new();
     private readonly MediaService mediaService;
+    private readonly UpdateChecker updateChecker = new();
+    private readonly CancellationTokenSource updateCheckCancellation = new();
+    private readonly SemaphoreSlim updateCheckGate = new(1, 1);
+    private System.Windows.Forms.Timer? updateCheckTimer;
+    private Task? updateCheckTask;
     private AppSettings settings;
     private ApiHost apiHost;
     private ToolStripMenuItem statusItem = null!;
@@ -66,6 +74,7 @@ internal sealed class TrayApplicationContext : ApplicationContext
         statusItem.Click += (_, _) => MessageBox.Show($"API is running on {settings.BindAddress}:{settings.Port}.");
         menu.Items.Add(statusItem);
         menu.Items.Add("Settings", null, (_, _) => OpenSettings());
+        menu.Items.Add("Check for updates", null, async (_, _) => await RunUpdateCheckAsync(manual: true));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, async (_, _) => await ExitAsync());
 
@@ -78,6 +87,18 @@ internal sealed class TrayApplicationContext : ApplicationContext
         };
 
         _ = StartApiAsync();
+        if (settings.CheckForUpdates)
+        {
+            updateCheckTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+            updateCheckTimer.Tick += async (_, _) =>
+            {
+                updateCheckTimer.Stop();
+                updateCheckTimer.Dispose();
+                updateCheckTimer = null;
+                await RunUpdateCheckAsync(manual: false);
+            };
+            updateCheckTimer.Start();
+        }
     }
 
     private static bool IsPortAvailable(string bindAddress, int port)
@@ -143,6 +164,87 @@ internal sealed class TrayApplicationContext : ApplicationContext
         _ = RestartApiAsync();
     }
 
+    private async Task RunUpdateCheckAsync(bool manual)
+    {
+        if (!await updateCheckGate.WaitAsync(0))
+        {
+            return;
+        }
+
+        var task = CheckForUpdatesAsync(manual);
+        updateCheckTask = task;
+        try
+        {
+            await task;
+        }
+        finally
+        {
+            if (ReferenceEquals(updateCheckTask, task))
+            {
+                updateCheckTask = null;
+            }
+
+            updateCheckGate.Release();
+        }
+    }
+
+    private async Task CheckForUpdatesAsync(bool manual)
+    {
+        try
+        {
+            var current = typeof(Program).Assembly.GetName().Version ?? new Version(0, 0, 0);
+            var latest = await updateChecker.GetLatestReleaseAsync(updateCheckCancellation.Token);
+            if (latest is null || !Version.TryParse(latest.Version, out var latestVersion))
+            {
+                if (manual)
+                {
+                    MessageBox.Show("The latest release version could not be determined.", "Updates");
+                }
+                return;
+            }
+
+            if (latestVersion <= current)
+            {
+                if (manual)
+                {
+                    MessageBox.Show("You are using the latest version.", "Updates");
+                }
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"A new version {latest.Version} is available. Open the release page?",
+                "Update available",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Information);
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo(latest.Url) { UseShellExecute = true });
+                }
+                catch (Win32Exception)
+                {
+                    MessageBox.Show("Could not open the release page.", "Updates");
+                }
+            }
+        }
+        catch (OperationCanceledException) when (updateCheckCancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException
+                or TaskCanceledException
+                or JsonException
+                or InvalidOperationException)
+        {
+            if (manual)
+            {
+                MessageBox.Show("Could not check for updates. Check your Internet connection.", "Updates");
+            }
+        }
+    }
+
     private async Task RestartApiAsync()
     {
         try
@@ -164,6 +266,15 @@ internal sealed class TrayApplicationContext : ApplicationContext
     {
         trayIcon.Visible = false;
         trayIcon.Dispose();
+        updateCheckCancellation.Cancel();
+        updateCheckTimer?.Dispose();
+        if (updateCheckTask is not null)
+        {
+            await updateCheckTask;
+        }
+        updateChecker.Dispose();
+        updateCheckCancellation.Dispose();
+        updateCheckGate.Dispose();
         await apiHost.StopAsync();
         await apiHost.DisposeAsync();
         ExitThread();

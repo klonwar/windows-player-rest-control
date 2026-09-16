@@ -4,7 +4,12 @@ using System.Text.Json;
 
 namespace WindowsPlayerControl.Infrastructure.Windows;
 
-public sealed record AppSettings(string BindAddress, int Port, string Secret, bool StartWithWindows);
+public sealed record AppSettings(
+    string BindAddress,
+    int Port,
+    string Secret,
+    bool StartWithWindows,
+    bool CheckForUpdates = false);
 
 public sealed class SettingsStore
 {
@@ -22,7 +27,7 @@ public sealed class SettingsStore
     {
         if (!File.Exists(filePath))
         {
-            var initial = new AppSettings("127.0.0.1", 5002, CreateSecret(), false);
+            var initial = new AppSettings("127.0.0.1", 5002, CreateSecret(), false, false);
             Save(initial);
             return initial;
         }
@@ -36,10 +41,20 @@ public sealed class SettingsStore
         if (!IsValidSecret(secret))
         {
             secret = CreateSecret();
-            Save(new AppSettings(persisted.BindAddress, persisted.Port, secret, persisted.StartWithWindows));
+            Save(new AppSettings(
+                persisted.BindAddress,
+                persisted.Port,
+                secret,
+                persisted.StartWithWindows,
+                persisted.CheckForUpdates));
         }
 
-        return new(persisted.BindAddress, persisted.Port, secret, persisted.StartWithWindows);
+        return new(
+            persisted.BindAddress,
+            persisted.Port,
+            secret,
+            persisted.StartWithWindows,
+            persisted.CheckForUpdates);
     }
 
     public void Save(AppSettings settings)
@@ -50,6 +65,7 @@ public sealed class SettingsStore
             settings.BindAddress,
             settings.Port,
             settings.StartWithWindows,
+            settings.CheckForUpdates,
             Convert.ToBase64String(ProtectedData.Protect(
                 Encoding.UTF8.GetBytes(settings.Secret),
                 optionalEntropy: null,
@@ -65,5 +81,10 @@ public sealed class SettingsStore
         .Replace('/', '_')
         .TrimEnd('=');
 
-    private sealed record PersistedSettings(string BindAddress, int Port, bool StartWithWindows, string ProtectedSecret);
+    private sealed record PersistedSettings(
+        string BindAddress,
+        int Port,
+        bool StartWithWindows,
+        bool CheckForUpdates,
+        string ProtectedSecret);
 }

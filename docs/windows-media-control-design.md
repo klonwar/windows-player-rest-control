@@ -29,16 +29,16 @@ Power management is explicitly out of scope. Existing Home Assistant HTTP comman
 - provide a settings window and tray actions for `Settings` and `Exit`;
 - optionally add the application to Windows startup;
 - expose a local HTTP API protected by a user-configured secret;
-- distribute a directly runnable `.exe`, without an installer or update mechanism.
+- distribute a directly runnable `.exe`, without an installer or automatic update mechanism.
 
 ### Explicit non-goals
 
-- Internet access or remote access from outside the trusted LAN;
+- remote access from outside the trusted LAN; optional GitHub Releases checks are the only outbound request.
 - power control;
 - MQTT as an MVP transport;
 - browser-specific automation or DOM scraping;
 - selecting and switching between several players through a custom player list;
-- automatic updates;
+- automatic updates or downloads;
 - publishing real machine addresses, secrets, or personal configuration.
 
 ## Architecture
@@ -171,7 +171,7 @@ Diagnostics must be safe to share publicly after redaction and must not include 
 
 ## Future considerations
 
-Only after the MVP is validated should the project consider MQTT, push state updates, multiple configured PCs, richer player selection, packaging, or update delivery. Any such change requires revisiting the security model and public-repository hygiene rules.
+Only after the MVP is validated should the project consider MQTT, push state updates, multiple configured PCs, richer player selection, packaging, or automatic update delivery. The current update check only reads public GitHub release metadata and opens the release page at the user's request. Any broader change requires revisiting the security model and public-repository hygiene rules.
 
 ## Implementation design addendum (validated)
 
@@ -207,7 +207,7 @@ Windows transport and metadata are isolated behind a media-session adapter using
 
 The tray exposes Status, Settings, API test, and Exit. Settings include bind mode, port, a visible/copyable secret, and startup toggle. The secret is stored using Windows DPAPI; non-secret settings are stored under `%LocalAppData%`. Startup uses the current-user Run key or Startup shortcut and does not require elevation. The visible secret is an intentional trusted-LAN UX choice; it must never be written to logs or diagnostics.
 
-Verification includes unit/API tests, Windows adapter checks, manual Chrome/Yandex Music and non-browser player smoke tests, UI lifecycle checks, and self-contained publish validation. Installer, Windows service registration, MQTT, power control, automatic updates, and public Internet exposure remain out of scope.
+Verification includes unit/API tests, Windows adapter checks, manual Chrome/Yandex Music and non-browser player smoke tests, UI lifecycle checks, update-check behavior, and self-contained publish validation. Installer, Windows service registration, MQTT, power control, automatic downloads, and public Internet exposure remain out of scope.
 
 ### Decision log addendum
 
