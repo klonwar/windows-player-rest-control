@@ -53,7 +53,8 @@ jobs:
           $version = $env:TAG.TrimStart('v')
           dotnet publish src/WindowsPlayerControl.App/WindowsPlayerControl.App.csproj `
             --configuration Release --runtime win-x64 --self-contained true `
-            -p:PublishSingleFile=true -p:Version=$version --output publish
+            -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
+            -p:DebugType=None -p:DebugSymbols=false -p:Version=$version --output publish
 
           $asset = "windows-player-control-$env:TAG-win-x64.exe"
           Move-Item -LiteralPath "publish\WindowsPlayerControl.App.exe" -Destination "publish\$asset"
