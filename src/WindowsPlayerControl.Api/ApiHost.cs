@@ -53,6 +53,13 @@ internal static class MediaRouteExtensions
 
         group.MapGet("/state", async (CancellationToken cancellationToken) =>
             Results.Ok(await media.GetStateAsync(cancellationToken)));
+        group.MapGet("/artwork", async (CancellationToken cancellationToken) =>
+        {
+            var artwork = await media.GetArtworkAsync(cancellationToken);
+            return artwork is null
+                ? Results.NotFound()
+                : Results.File(artwork.Data, artwork.ContentType);
+        });
 
         MapCommand(group, "/media/play", MediaCommand.Play, media);
         MapCommand(group, "/media/pause", MediaCommand.Pause, media);
