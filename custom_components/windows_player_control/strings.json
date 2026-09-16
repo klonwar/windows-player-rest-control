@@ -14,6 +14,7 @@
     "error": {
       "cannot_connect": "Unable to connect to the Windows application.",
       "invalid_auth": "The secret was rejected.",
+      "invalid_secret": "The secret must contain at least 16 letters, digits, hyphens, or underscores.",
       "unknown": "Unexpected error."
     },
     "abort": {

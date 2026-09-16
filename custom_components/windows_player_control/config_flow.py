@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
@@ -24,31 +26,34 @@ class WindowsPlayerControlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Show the setup form and validate submitted endpoint details."""
         errors: dict[str, str] = {}
         if user_input is not None:
-            client = WindowsPlayerControlClient(
-                user_input[CONF_HOST], user_input[CONF_PORT], user_input[CONF_SECRET]
-            )
-            try:
-                await client.async_get_state()
-            except WindowsPlayerControlApiError:
-                errors["base"] = "invalid_auth"
-            except WindowsPlayerControlConnectionError:
-                errors["base"] = "cannot_connect"
-            except WindowsPlayerControlError:
-                errors["base"] = "unknown"
+            if not re.fullmatch(r"[A-Za-z0-9_-]{16,}", user_input[CONF_SECRET]):
+                errors["base"] = "invalid_secret"
             else:
-                await self.async_set_unique_id(
-                    f"{user_input[CONF_HOST].strip()}:{user_input[CONF_PORT]}"
+                client = WindowsPlayerControlClient(
+                    user_input[CONF_HOST], user_input[CONF_PORT], user_input[CONF_SECRET]
                 )
-                self._abort_if_unique_id_configured()
-                return self.async_create_entry(
-                    title=(
-                        f"Windows Player Control ({user_input[CONF_HOST]}:"
-                        f"{user_input[CONF_PORT]})"
-                    ),
-                    data=user_input,
-                )
-            finally:
-                await client.async_close()
+                try:
+                    await client.async_get_state()
+                except WindowsPlayerControlApiError:
+                    errors["base"] = "invalid_auth"
+                except WindowsPlayerControlConnectionError:
+                    errors["base"] = "cannot_connect"
+                except WindowsPlayerControlError:
+                    errors["base"] = "unknown"
+                else:
+                    await self.async_set_unique_id(
+                        f"{user_input[CONF_HOST].strip()}:{user_input[CONF_PORT]}"
+                    )
+                    self._abort_if_unique_id_configured()
+                    return self.async_create_entry(
+                        title=(
+                            f"Windows Player Control ({user_input[CONF_HOST]}:"
+                            f"{user_input[CONF_PORT]})"
+                        ),
+                        data=user_input,
+                    )
+                finally:
+                    await client.async_close()
 
         return self.async_show_form(
             step_id="user",
@@ -58,7 +63,7 @@ class WindowsPlayerControlConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_PORT, default=DEFAULT_PORT): vol.All(
                         vol.Coerce(int), vol.Range(min=1, max=65535)
                     ),
-                    vol.Required(CONF_SECRET): vol.Match(r"^[A-Za-z0-9_-]{16,}$"),
+                    vol.Required(CONF_SECRET): str,
                 }
             ),
             errors=errors,
