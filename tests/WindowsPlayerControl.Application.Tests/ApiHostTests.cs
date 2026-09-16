@@ -52,11 +52,38 @@ public sealed class ApiHostTests
         Assert.DoesNotContain("test-secret", body, StringComparison.Ordinal);
     }
 
-    private static async Task<TestHost> StartHostAsync(FakeAudioController? audio = null)
+    [Fact]
+    public async Task Artwork_returns_protected_image_for_valid_secret()
+    {
+        await using var host = await StartHostAsync();
+        using var client = new HttpClient { BaseAddress = host.BaseAddress };
+
+        var unauthorized = await client.GetAsync("api/v1/wrong/artwork");
+        var response = await client.GetAsync("api/v1/test-secret/artwork");
+        var body = await response.Content.ReadAsByteArrayAsync();
+
+        Assert.Equal(HttpStatusCode.Unauthorized, unauthorized.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("image/png", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(new byte[] { 1, 2, 3 }, body);
+    }
+
+    [Fact]
+    public async Task Artwork_returns_not_found_when_thumbnail_is_unavailable()
+    {
+        await using var host = await StartHostAsync(artwork: false);
+        using var client = new HttpClient { BaseAddress = host.BaseAddress };
+
+        var response = await client.GetAsync("api/v1/test-secret/artwork");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    private static async Task<TestHost> StartHostAsync(FakeAudioController? audio = null, bool artwork = true)
     {
         var port = GetFreePort();
         var media = new MediaService(
-            new FakeMediaController(),
+            new FakeMediaController(artwork),
             audio ?? new FakeAudioController());
         var api = ApiHost.Create(new ApiHostOptions("127.0.0.1", port, "test-secret"), media);
         await api.StartAsync();
@@ -81,13 +108,18 @@ public sealed class ApiHostTests
         }
     }
 
-    private sealed class FakeMediaController : IMediaController
+    private sealed class FakeMediaController(bool artwork) : IMediaController, IMediaArtwork
     {
         public Task<MediaState> GetStateAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(new MediaState(MediaAvailability.Available, PlaybackState.Paused, null, null, "Test", "Title", null, null, DateTimeOffset.UtcNow));
 
         public Task<MediaError?> ExecuteAsync(MediaCommand command, CancellationToken cancellationToken = default) =>
             Task.FromResult<MediaError?>(new(MediaErrorCode.MediaSessionUnavailable, "No session"));
+
+        public Task<MediaArtwork?> GetArtworkAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<MediaArtwork?>(artwork
+                ? new MediaArtwork(new byte[] { 1, 2, 3 }, "image/png")
+                : null);
     }
 
     private sealed class FakeAudioController : ISystemAudio

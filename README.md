@@ -98,6 +98,16 @@ Content-Type: application/json
 {"value": 0.5}
 ```
 
+### Artwork proof of concept
+
+The API exposes a protected artwork endpoint used by the Home Assistant media player:
+
+```bash
+curl -o artwork "http://<windows-host>:5002/api/v1/<secret>/artwork"
+```
+
+It returns the thumbnail published by the current Windows Media Session, or `404` when no thumbnail is available. Chrome and browser-based players may not publish artwork through Windows.
+
 Successful commands return `204 No Content`. Authentication failures return `401`; invalid volume values return `400`; unavailable or unknown media state returns `409`.
 
 Because the secret is in the URL, avoid access logs, reverse-proxy logs, screenshots, and diagnostics that could capture complete request paths.

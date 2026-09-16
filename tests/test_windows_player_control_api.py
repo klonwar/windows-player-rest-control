@@ -82,6 +82,37 @@ def test_client_uses_secret_path_and_http_methods() -> None:
     assert calls[2][2]["json"] == {"value": 0.5}
 
 
+def test_client_exposes_protected_artwork_url() -> None:
+    client = WindowsPlayerControlClient("pc.local", 5002, "visible-secret")
+
+    assert client.artwork_url == "http://pc.local:5002/api/v1/visible-secret/artwork"
+
+
+def test_client_artwork_url_changes_only_with_media_metadata() -> None:
+    client = WindowsPlayerControlClient("pc.local", 5002, "visible-secret")
+    playing = parse_state({"application": "Chrome", "title": "A & B", "artist": "Артист"})
+    same_track = parse_state(
+        {"application": "Chrome", "title": "A & B", "artist": "Артист", "playback": "paused"}
+    )
+    next_track = parse_state({"application": "Chrome", "title": "Next", "artist": "Артист"})
+    delimiter_track = parse_state({"application": "Chrome", "title": "A|B", "artist": "C"})
+    alternate_delimiter_track = parse_state(
+        {"application": "Chrome", "title": "A", "artist": "B|C"}
+    )
+    empty = parse_state({})
+
+    first_url = client.artwork_url_for(playing)
+    assert first_url is not None
+    assert first_url.startswith("http://pc.local:5002/api/v1/visible-secret/artwork?track=")
+    assert len(first_url.rsplit("=", 1)[1]) == 16
+    assert client.artwork_url_for(same_track) == first_url
+    assert client.artwork_url_for(next_track) != first_url
+    assert client.artwork_url_for(delimiter_track) != client.artwork_url_for(
+        alternate_delimiter_track
+    )
+    assert client.artwork_url_for(empty) is None
+
+
 def test_client_maps_http_errors_without_echoing_secret() -> None:
     class Response:
         status = 401

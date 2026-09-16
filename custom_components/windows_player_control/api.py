@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import quote
 
 import aiohttp
 
@@ -87,6 +90,23 @@ class WindowsPlayerControlClient:
     def base_url(self) -> str:
         """Return the endpoint URL with the configured secret in its path."""
         return f"http://{self.host}:{self.port}/api/v1/{self.secret}"
+
+    @property
+    def artwork_url(self) -> str:
+        """Return the protected artwork endpoint URL."""
+        return f"{self.base_url}/artwork"
+
+    def artwork_url_for(self, state: MediaSnapshot) -> str | None:
+        """Return a cache-busting artwork URL for a media snapshot."""
+        if not any((state.title, state.artist, state.album)):
+            return None
+        cache_key = json.dumps(
+            [state.application, state.title, state.artist, state.album],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        token = hashlib.sha256(cache_key.encode("utf-8")).hexdigest()[:16]
+        return f"{self.artwork_url}?track={quote(token, safe='')}"
 
     async def async_close(self) -> None:
         """Close a session owned by this client."""
