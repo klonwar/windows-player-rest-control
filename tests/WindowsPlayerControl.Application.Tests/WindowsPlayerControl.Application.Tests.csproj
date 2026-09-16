@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.5.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WindowsPlayerControl.Application\WindowsPlayerControl.Application.csproj" />
+    <ProjectReference Include="..\..\src\WindowsPlayerControl.Domain\WindowsPlayerControl.Domain.csproj" />
+    <ProjectReference Include="..\..\src\WindowsPlayerControl.Api\WindowsPlayerControl.Api.csproj" />
+    <ProjectReference Include="..\..\src\WindowsPlayerControl.Infrastructure.Windows\WindowsPlayerControl.Infrastructure.Windows.csproj" />
+    <ProjectReference Include="..\..\src\WindowsPlayerControl.App\WindowsPlayerControl.App.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>
