@@ -51,8 +51,10 @@ jobs:
           if ($baseVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid stable version: $baseVersion" }
           $sourceSha = (git rev-parse HEAD).Trim()
           $timestamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddHHmmss')
-          $tag = "v$baseVersion-beta.$timestamp.${env:GITHUB_RUN_ID}"
+          $version = "$baseVersion-beta.$timestamp.${env:GITHUB_RUN_ID}"
+          $tag = "v$version"
           "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
           "source_sha=$sourceSha" >> $env:GITHUB_OUTPUT
 
       - name: Restore
@@ -66,7 +68,7 @@ jobs:
       - name: Publish executable
         shell: pwsh
         env:
-          VERSION: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
           TAG: ${{ steps.meta.outputs.tag }}
         run: |
           dotnet publish src/WindowsPlayerControl.App/WindowsPlayerControl.App.csproj `
