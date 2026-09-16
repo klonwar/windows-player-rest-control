@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using WindowsPlayerControl.Api;
 using WindowsPlayerControl.Application;
 using WindowsPlayerControl.Infrastructure.Windows;
@@ -6,11 +8,36 @@ namespace WindowsPlayerControl.App;
 
 internal static class Program
 {
+    private const string InstanceMutexName = "Local\\WindowsPlayerControl.SingleInstance";
+
     [STAThread]
     private static void Main()
     {
         ApplicationConfiguration.Initialize();
-        System.Windows.Forms.Application.Run(new TrayApplicationContext());
+
+        using var instanceMutex = new Mutex(initiallyOwned: true, InstanceMutexName, out var createdNew);
+        if (!createdNew)
+        {
+            MessageBox.Show(
+                "Windows Player Control is already running.",
+                "Windows Player Control",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            return;
+        }
+
+        try
+        {
+            System.Windows.Forms.Application.Run(new TrayApplicationContext());
+        }
+        catch (PortAlreadyInUseException)
+        {
+            MessageBox.Show(
+                "Windows Player Control is already running, or the configured API port is in use.",
+                "Windows Player Control",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
     }
 }
 
@@ -26,6 +53,11 @@ internal sealed class TrayApplicationContext : ApplicationContext
     public TrayApplicationContext()
     {
         settings = settingsStore.LoadOrCreate();
+        if (!IsPortAvailable(settings.BindAddress, settings.Port))
+        {
+            throw new PortAlreadyInUseException();
+        }
+
         mediaService = new MediaService(new WindowsMediaController(), new CoreAudioController());
         apiHost = ApiHost.Create(new ApiHostOptions(settings.BindAddress, settings.Port, settings.Secret), mediaService);
 
@@ -46,6 +78,36 @@ internal sealed class TrayApplicationContext : ApplicationContext
         };
 
         _ = StartApiAsync();
+    }
+
+    private static bool IsPortAvailable(string bindAddress, int port)
+    {
+        var address = ResolveBindAddress(bindAddress);
+        using var listener = new TcpListener(address, port);
+        try
+        {
+            listener.Start();
+            return true;
+        }
+        catch (SocketException)
+        {
+            return false;
+        }
+    }
+
+    private static IPAddress ResolveBindAddress(string bindAddress)
+    {
+        if (string.IsNullOrWhiteSpace(bindAddress) || bindAddress is "0.0.0.0" or "*")
+        {
+            return IPAddress.Any;
+        }
+
+        if (IPAddress.TryParse(bindAddress, out var address))
+        {
+            return address;
+        }
+
+        return Dns.GetHostAddresses(bindAddress).FirstOrDefault() ?? IPAddress.Any;
     }
 
     private static Icon LoadApplicationIcon()
@@ -107,3 +169,5 @@ internal sealed class TrayApplicationContext : ApplicationContext
         ExitThread();
     }
 }
+
+internal sealed class PortAlreadyInUseException : Exception;

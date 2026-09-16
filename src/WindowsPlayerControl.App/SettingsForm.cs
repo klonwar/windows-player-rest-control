@@ -27,6 +27,7 @@ internal sealed class SettingsForm : Form
         secret.Text = settings.Secret;
         secret.UseSystemPasswordChar = false;
         startWithWindows.Text = "Start with Windows";
+        startWithWindows.AutoSize = true;
         startWithWindows.Checked = settings.StartWithWindows;
 
         var table = new TableLayoutPanel
