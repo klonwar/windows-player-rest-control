@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.2](https://github.com/klonwar/windows-player-rest-control/compare/v0.3.1...v0.3.2) (2026-09-16)
+
+
+### Bug Fixes
+
+* integration fields reset ([2a22cb9](https://github.com/klonwar/windows-player-rest-control/commit/2a22cb9650b6ce3ee8401f65b49d707bfb6ea60d))
+* more states request after action ([89e44d3](https://github.com/klonwar/windows-player-rest-control/commit/89e44d32713b5e39b99c9c9bc07f8ec6cf4a0a0e))
+* remove unnecessary actions ([5bd8a17](https://github.com/klonwar/windows-player-rest-control/commit/5bd8a1753e2ac278f7be5044b4c09c58f77a6e55))
+* size optimizations ([0018801](https://github.com/klonwar/windows-player-rest-control/commit/0018801f5a84972df4dc355e0528e93cd4998361))
+
 ## [0.3.1](https://github.com/klonwar/windows-player-rest-control/compare/v0.3.0...v0.3.1) (2026-09-16)
 
 
