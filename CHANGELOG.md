@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/klonwar/windows-player-rest-control/compare/v0.4.0...v0.4.1) (2026-09-16)
+
+
+### Bug Fixes
+
+* manifest + sync speed ([886954e](https://github.com/klonwar/windows-player-rest-control/commit/886954e482e0ca6e9fca4744d2b7b626dd45706f))
+
 ## [0.4.0](https://github.com/klonwar/windows-player-rest-control/compare/v0.3.2...v0.4.0) (2026-09-16)
 
 
