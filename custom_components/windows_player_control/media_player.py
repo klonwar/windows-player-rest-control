@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from homeassistant.components.media_player import (
@@ -119,31 +120,43 @@ class WindowsPlayerControlMediaPlayer(CoordinatorEntity, MediaPlayerEntity):
             ATTR_OBSERVED_AT: self._state.observed_at,
         }
 
+    async def _async_command_and_refresh(self, command: str) -> None:
+        """Execute a command and immediately fetch the resulting state."""
+        await self._client.async_command(command)
+        await self.coordinator.async_request_refresh()
+        await asyncio.sleep(0.1)
+        await self.coordinator.async_request_refresh()
+
+    async def _async_set_volume_and_refresh(self, volume: float) -> None:
+        """Set volume and immediately fetch the resulting state."""
+        await self._client.async_set_volume(volume)
+        await self.coordinator.async_request_refresh()
+
     async def async_media_play(self) -> None:
-        await self._client.async_command("/media/play")
+        await self._async_command_and_refresh("/media/play")
 
     async def async_media_pause(self) -> None:
-        await self._client.async_command("/media/pause")
+        await self._async_command_and_refresh("/media/pause")
 
     async def async_media_play_pause(self) -> None:
-        await self._client.async_command("/media/toggle")
+        await self._async_command_and_refresh("/media/toggle")
 
     async def async_media_next_track(self) -> None:
-        await self._client.async_command("/media/next")
+        await self._async_command_and_refresh("/media/next")
 
     async def async_media_previous_track(self) -> None:
-        await self._client.async_command("/media/previous")
+        await self._async_command_and_refresh("/media/previous")
 
     async def async_set_volume_level(self, volume: float) -> None:
-        await self._client.async_set_volume(volume)
+        await self._async_set_volume_and_refresh(volume)
 
     async def async_volume_up(self) -> None:
         """Increase Windows system volume by one step."""
-        await self._client.async_command("/volume/up")
+        await self._async_command_and_refresh("/volume/up")
 
     async def async_volume_down(self) -> None:
         """Decrease Windows system volume by one step."""
-        await self._client.async_command("/volume/down")
+        await self._async_command_and_refresh("/volume/down")
 
     async def async_mute_volume(self, mute: bool) -> None:
-        await self._client.async_command("/volume/mute" if mute else "/volume/unmute")
+        await self._async_command_and_refresh("/volume/mute" if mute else "/volume/unmute")
