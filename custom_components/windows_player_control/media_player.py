@@ -123,14 +123,14 @@ class WindowsPlayerControlMediaPlayer(CoordinatorEntity, MediaPlayerEntity):
     async def _async_command_and_refresh(self, command: str) -> None:
         """Execute a command and immediately fetch the resulting state."""
         await self._client.async_command(command)
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_refresh()
         await asyncio.sleep(0.1)
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_refresh()
 
     async def _async_set_volume_and_refresh(self, volume: float) -> None:
         """Set volume and immediately fetch the resulting state."""
         await self._client.async_set_volume(volume)
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_refresh()
 
     async def async_media_play(self) -> None:
         await self._async_command_and_refresh("/media/play")
