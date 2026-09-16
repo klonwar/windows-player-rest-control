@@ -3,7 +3,7 @@ Small Windows app giving REST API for controlling media player. With Home Assist
 
 ## CI/CD
 
-GitHub Actions runs the Windows build and tests on every push and pull request. HACS and Hassfest validation activate automatically when a Home Assistant integration manifest is added under `custom_components/`.
+GitHub Actions runs the Windows build and tests on pull requests and pushes to `main`. HACS and Hassfest validation activate automatically when a Home Assistant integration manifest is added under `custom_components/`.
 
 Stable releases use release-please. A push to `main` creates or updates a release PR; after the release PR is reviewed and squash-merged, release-please creates the version tag and GitHub Release. The release workflow then builds the self-contained Windows executable and uploads it with a SHA-256 checksum.
 

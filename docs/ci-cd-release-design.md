@@ -23,7 +23,7 @@
 
 ### CI
 
-`ci.yml` runs on every push and pull request.
+`ci.yml` runs on pull requests and pushes to `main`.
 
 - Ubuntu: Home Assistant tests, Python compile checks, linting, and formatting checks.
 - Windows: .NET restore, build, and test for the application solution.
