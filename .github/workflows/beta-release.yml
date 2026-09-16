@@ -1,4 +1,5 @@
 name: "[Release] Beta"
+run-name: "[Release] Beta #${{ github.run_number }} - ${{ inputs.source_ref }}"
 
 on:
   workflow_dispatch:
