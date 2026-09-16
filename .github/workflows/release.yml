@@ -1,0 +1,72 @@
+name: "[Release] Windows executable"
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-build-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Windows executable
+    if: ${{ !github.event.release.prerelease && startsWith(github.event.release.tag_name, 'v') }}
+    runs-on: windows-latest
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release tag
+        shell: pwsh
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if ($env:TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw "Stable release tag must match vX.Y.Z: $env:TAG"
+          }
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+
+      - name: Restore
+        run: dotnet restore WindowsPlayerControl.sln
+
+      - name: Build and test
+        run: |
+          dotnet build WindowsPlayerControl.sln --no-restore --configuration Release --verbosity minimal
+          dotnet test WindowsPlayerControl.sln --no-build --configuration Release --logger "console;verbosity=minimal"
+
+      - name: Publish self-contained executable
+        shell: pwsh
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          $version = $env:TAG.TrimStart('v')
+          dotnet publish src/WindowsPlayerControl.App/WindowsPlayerControl.App.csproj `
+            --configuration Release --runtime win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:Version=$version --output publish
+
+          $asset = "windows-player-control-$env:TAG-win-x64.exe"
+          Move-Item -LiteralPath "publish\WindowsPlayerControl.App.exe" -Destination "publish\$asset"
+          $file = Get-Item -LiteralPath "publish\$asset"
+          if ($file.Length -le 0) { throw "Published executable is empty" }
+          $hash = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
+          "$hash  $asset" | Set-Content -NoNewline "publish\$asset.sha256"
+
+      - name: Upload executable and checksum
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ github.token }}
+          tag_name: ${{ github.event.release.tag_name }}
+          files: |
+            publish/windows-player-control-${{ github.event.release.tag_name }}-win-x64.exe
+            publish/windows-player-control-${{ github.event.release.tag_name }}-win-x64.exe.sha256

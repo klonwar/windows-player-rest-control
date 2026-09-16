@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  detect_integration:
+    name: Detect Home Assistant integration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      configured: ${{ steps.detect.outputs.configured }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        shell: bash
+        run: |
+          if compgen -G 'custom_components/*/manifest.json' > /dev/null; then
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  windows-app:
+    name: Windows application
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+      - name: Restore
+        run: dotnet restore WindowsPlayerControl.sln
+      - name: Build
+        run: dotnet build WindowsPlayerControl.sln --no-restore --configuration Release --verbosity minimal
+      - name: Test
+        run: dotnet test WindowsPlayerControl.sln --no-build --configuration Release --logger "console;verbosity=minimal"
+      - name: Check whitespace
+        shell: bash
+        run: git diff --check
+
+  home-assistant:
+    name: Home Assistant integration
+    needs: detect_integration
+    if: ${{ needs.detect_integration.outputs.configured == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest ruff
+      - name: Compile integration
+        run: python -m compileall -q custom_components
+      - name: Run integration tests
+        run: python -m pytest tests
+      - name: Lint Python
+        run: ruff check .
+      - name: Check whitespace
+        run: git diff --check
+
+  home-assistant-not-configured:
+    name: Home Assistant integration not configured
+    needs: detect_integration
+    if: ${{ needs.detect_integration.outputs.configured != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No custom_components/**/manifest.json found; HACS integration CI will activate when the integration is added."

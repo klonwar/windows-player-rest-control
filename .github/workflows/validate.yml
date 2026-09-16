@@ -1,0 +1,67 @@
+name: "[Validate] HACS + Hassfest"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  detect_integration:
+    name: Detect Home Assistant integration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      configured: ${{ steps.detect.outputs.configured }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        shell: bash
+        run: |
+          if compgen -G 'custom_components/*/manifest.json' > /dev/null; then
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+          fi
+
+  validate-hacs:
+    name: HACS validation
+    needs: detect_integration
+    if: ${{ needs.detect_integration.outputs.configured == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: integration
+
+  validate-hassfest:
+    name: Hassfest validation
+    needs: detect_integration
+    if: ${{ needs.detect_integration.outputs.configured == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Hassfest validation
+        uses: home-assistant/actions/hassfest@master
+
+  validation-not-configured:
+    name: HACS validation not configured
+    needs: detect_integration
+    if: ${{ needs.detect_integration.outputs.configured != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No custom_components/**/manifest.json found; HACS and Hassfest validation will activate when the integration is added."

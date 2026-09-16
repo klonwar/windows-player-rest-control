@@ -1,0 +1,92 @@
+name: "[Release] Beta"
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: "Branch or commit SHA to publish as a beta"
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: beta-release
+  cancel-in-progress: false
+
+jobs:
+  beta:
+    name: Publish beta release
+    runs-on: windows-latest
+    steps:
+      - name: Require trusted workflow revision
+        shell: pwsh
+        env:
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          $expected = "$env:GITHUB_REPOSITORY/.github/workflows/beta-release.yml@refs/heads/main"
+          if ($env:WORKFLOW_REF -ne $expected) {
+            throw "Run this workflow from the main branch; use source_ref for the beta source (got $env:WORKFLOW_REF)"
+          }
+
+      - name: Check out source ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+
+      - name: Calculate beta metadata
+        id: meta
+        shell: pwsh
+        run: |
+          $manifest = Get-Content -Raw .release-please-manifest.json | ConvertFrom-Json
+          $baseVersion = $manifest.'.'
+          if ($baseVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw "Invalid stable version: $baseVersion" }
+          $sourceSha = (git rev-parse HEAD).Trim()
+          $timestamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddHHmmss')
+          $tag = "v$baseVersion-beta.$timestamp.${env:GITHUB_RUN_ID}"
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "source_sha=$sourceSha" >> $env:GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore WindowsPlayerControl.sln
+
+      - name: Build and test
+        run: |
+          dotnet build WindowsPlayerControl.sln --no-restore --configuration Release --verbosity minimal
+          dotnet test WindowsPlayerControl.sln --no-build --configuration Release --logger "console;verbosity=minimal"
+
+      - name: Publish executable
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.meta.outputs.tag }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          dotnet publish src/WindowsPlayerControl.App/WindowsPlayerControl.App.csproj `
+            --configuration Release --runtime win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:Version=$env:VERSION --output publish
+          $asset = "windows-player-control-$env:TAG-win-x64.exe"
+          Move-Item -LiteralPath "publish\WindowsPlayerControl.App.exe" -Destination "publish\$asset"
+          $file = Get-Item -LiteralPath "publish\$asset"
+          if ($file.Length -le 0) { throw "Published executable is empty" }
+          $hash = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
+          "$hash  $asset" | Set-Content -NoNewline "publish\$asset.sha256"
+
+      - name: Publish beta release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ github.token }}
+          tag_name: ${{ steps.meta.outputs.tag }}
+          target_commitish: ${{ steps.meta.outputs.source_sha }}
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            publish/windows-player-control-${{ steps.meta.outputs.tag }}-win-x64.exe
+            publish/windows-player-control-${{ steps.meta.outputs.tag }}-win-x64.exe.sha256
