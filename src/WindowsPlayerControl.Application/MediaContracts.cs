@@ -8,6 +8,13 @@ public interface IMediaController
     Task<MediaError?> ExecuteAsync(MediaCommand command, CancellationToken cancellationToken = default);
 }
 
+public sealed record MediaArtwork(byte[] Data, string ContentType);
+
+public interface IMediaArtwork
+{
+    Task<MediaArtwork?> GetArtworkAsync(CancellationToken cancellationToken = default);
+}
+
 public interface ISystemAudio
 {
     Task<(double? Volume, bool? Muted)> GetStateAsync(CancellationToken cancellationToken = default);
@@ -47,5 +54,9 @@ public sealed class MediaService(IMediaController mediaController, ISystemAudio 
 
     public Task<MediaError?> SetMutedAsync(bool muted, CancellationToken cancellationToken = default) =>
         systemAudio.SetMutedAsync(muted, cancellationToken);
-}
 
+    public Task<MediaArtwork?> GetArtworkAsync(CancellationToken cancellationToken = default) =>
+        mediaController is IMediaArtwork artwork
+            ? artwork.GetArtworkAsync(cancellationToken)
+            : Task.FromResult<MediaArtwork?>(null);
+}

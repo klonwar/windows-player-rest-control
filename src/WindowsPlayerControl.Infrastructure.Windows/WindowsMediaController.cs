@@ -1,13 +1,14 @@
 using Windows.Media.Control;
 using Windows.ApplicationModel;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using NAudio.CoreAudioApi;
 using WindowsPlayerControl.Application;
 using WindowsPlayerControl.Domain;
 
 namespace WindowsPlayerControl.Infrastructure.Windows;
 
-public sealed class WindowsMediaController : IMediaController
+public sealed class WindowsMediaController : IMediaController, IMediaArtwork
 {
     private readonly SemaphoreSlim gate = new(1, 1);
     private GlobalSystemMediaTransportControlsSessionManager? manager;
@@ -100,6 +101,35 @@ public sealed class WindowsMediaController : IMediaController
         }
 
         return succeeded ? null : new(MediaErrorCode.OperationRejected, "Windows rejected the media operation.");
+    }
+
+    public async Task<MediaArtwork?> GetArtworkAsync(CancellationToken cancellationToken = default)
+    {
+        var session = await GetCurrentSessionAsync(cancellationToken);
+        if (session is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var properties = await session.TryGetMediaPropertiesAsync().AsTask(cancellationToken);
+            if (properties.Thumbnail is null)
+            {
+                return null;
+            }
+
+            using var stream = await properties.Thumbnail.OpenReadAsync();
+            using var input = stream.AsStreamForRead();
+            using var output = new MemoryStream();
+            await input.CopyToAsync(output, cancellationToken);
+            var contentType = string.IsNullOrWhiteSpace(stream.ContentType) ? "image/jpeg" : stream.ContentType;
+            return output.Length == 0 ? null : new MediaArtwork(output.ToArray(), contentType);
+        }
+        catch (COMException)
+        {
+            return null;
+        }
     }
 
     private async Task<GlobalSystemMediaTransportControlsSession?> GetCurrentSessionAsync(CancellationToken cancellationToken)
