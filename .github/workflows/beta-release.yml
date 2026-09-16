@@ -56,7 +56,7 @@ jobs:
           "source_sha=$sourceSha" >> $env:GITHUB_OUTPUT
 
       - name: Restore
-        run: dotnet restore WindowsPlayerControl.sln
+        run: dotnet restore WindowsPlayerControl.sln --runtime win-x64
 
       - name: Build and test
         run: |
@@ -70,7 +70,7 @@ jobs:
           TAG: ${{ steps.meta.outputs.tag }}
         run: |
           dotnet publish src/WindowsPlayerControl.App/WindowsPlayerControl.App.csproj `
-            --configuration Release --runtime win-x64 --self-contained true `
+            --configuration Release --runtime win-x64 --self-contained true --no-restore `
             -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
             -p:DebugType=None -p:DebugSymbols=false -p:Version=$env:VERSION --output publish
           $asset = "windows-player-control-$env:TAG-win-x64.exe"
