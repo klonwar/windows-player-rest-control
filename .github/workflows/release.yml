@@ -38,7 +38,7 @@ jobs:
           dotnet-version: 8.x
 
       - name: Restore
-        run: dotnet restore WindowsPlayerControl.sln
+        run: dotnet restore WindowsPlayerControl.sln --runtime win-x64
 
       - name: Build and test
         run: |
@@ -52,7 +52,7 @@ jobs:
         run: |
           $version = $env:TAG.TrimStart('v')
           dotnet publish src/WindowsPlayerControl.App/WindowsPlayerControl.App.csproj `
-            --configuration Release --runtime win-x64 --self-contained true `
+            --configuration Release --runtime win-x64 --self-contained true --no-restore `
             -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
             -p:DebugType=None -p:DebugSymbols=false -p:Version=$version --output publish
 
